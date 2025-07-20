@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { hackerNewsApi } from '../services/hackerNewsApi';
 import { ContentExtractorService } from '../services/contentExtractor';
+import { SummarizationService } from '../services/summarizationService';
+import { SummaryQueueService } from '../services/summaryQueue';
 import { StoryWithDetails, ApiResponse } from '../types/hackerNews';
 import { ExtractedContent } from '../types/contentExtraction';
+import { SummaryResponse } from '../types/summarization';
 
 export interface HackerNewsHookState {
   stories: StoryWithDetails[];
@@ -10,7 +13,14 @@ export interface HackerNewsHookState {
   refreshing: boolean;
   error: string | null;
   extractionProgress: Map<number, ExtractedContent | 'loading' | 'failed'>;
+  summarizationProgress: Map<number, SummaryResponse | 'loading' | 'failed'>;
   extractionStats: {
+    total: number;
+    completed: number;
+    failed: number;
+    inProgress: number;
+  };
+  summarizationStats: {
     total: number;
     completed: number;
     failed: number;
@@ -22,6 +32,7 @@ export interface HackerNewsHookActions {
   refreshStories: () => Promise<void>;
   loadMoreStories: () => Promise<void>;
   retryExtraction: (storyId: number) => Promise<void>;
+  retrySummarization: (storyId: number) => Promise<void>;
   clearCache: () => void;
   getApiStats: () => any;
 }
@@ -32,14 +43,49 @@ export const useHackerNews = (limit: number = 20): HackerNewsHookState & HackerN
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [extractionProgress, setExtractionProgress] = useState<Map<number, ExtractedContent | 'loading' | 'failed'>>(new Map());
+  const [summarizationProgress, setSummarizationProgress] = useState<Map<number, SummaryResponse | 'loading' | 'failed'>>(new Map());
   
   const extractionQueue = useRef<Set<number>>(new Set());
+  const summarizationQueue = useRef<Set<number>>(new Set());
   const currentLimit = useRef(limit);
   const lastRefreshTime = useRef<number>(0);
+  
+  // Initialize AI services
+  const summarizationService = useRef(SummarizationService.getInstance());
+  const summaryQueueService = useRef(SummaryQueueService.getInstance());
 
   const updateExtractionProgress = useCallback((storyId: number, result: ExtractedContent | 'loading' | 'failed') => {
     setExtractionProgress(prev => new Map(prev.set(storyId, result)));
   }, []);
+
+  const updateSummarizationProgress = useCallback((storyId: number, result: SummaryResponse | 'loading' | 'failed') => {
+    setSummarizationProgress(prev => new Map(prev.set(storyId, result)));
+  }, []);
+
+  const summarizeContentForStory = useCallback(async (story: StoryWithDetails, extractedContent: ExtractedContent) => {
+    if (!extractedContent.success || !extractedContent.content || summarizationQueue.current.has(story.id)) {
+      return;
+    }
+
+    summarizationQueue.current.add(story.id);
+    updateSummarizationProgress(story.id, 'loading');
+
+    try {
+      const summary = await summarizationService.current.summarizeArticle(
+        extractedContent.content,
+        story.title,
+        story.url || '',
+        'normal' // Use normal priority for regular stories
+      );
+
+      updateSummarizationProgress(story.id, summary);
+    } catch (error) {
+      console.warn(`AI summarization failed for story ${story.id}:`, error);
+      updateSummarizationProgress(story.id, 'failed');
+    } finally {
+      summarizationQueue.current.delete(story.id);
+    }
+  }, [updateSummarizationProgress]);
 
   const extractContentForStory = useCallback(async (story: StoryWithDetails) => {
     if (!story.url || extractionQueue.current.has(story.id)) {
@@ -57,6 +103,11 @@ export const useHackerNews = (limit: number = 20): HackerNewsHookState & HackerN
       });
 
       updateExtractionProgress(story.id, content);
+      
+      // Start AI summarization if content extraction was successful
+      if (content.success && content.content) {
+        setTimeout(() => summarizeContentForStory(story, content), 500); // Small delay to avoid overwhelming UI
+      }
     } catch (error) {
       console.warn(`Content extraction failed for story ${story.id}:`, error);
       updateExtractionProgress(story.id, 'failed');
@@ -119,9 +170,11 @@ export const useHackerNews = (limit: number = 20): HackerNewsHookState & HackerN
       return;
     }
 
-    // Clear extraction progress for fresh start
+    // Clear extraction and summarization progress for fresh start
     setExtractionProgress(new Map());
+    setSummarizationProgress(new Map());
     extractionQueue.current.clear();
+    summarizationQueue.current.clear();
     
     await loadStories(true, currentLimit.current);
   }, [loadStories]);
@@ -138,11 +191,22 @@ export const useHackerNews = (limit: number = 20): HackerNewsHookState & HackerN
     }
   }, [stories, extractContentForStory]);
 
+  const retrySummarization = useCallback(async (storyId: number) => {
+    const story = stories.find(s => s.id === storyId);
+    const extractedContent = extractionProgress.get(storyId);
+    
+    if (story && typeof extractedContent === 'object' && extractedContent.success) {
+      await summarizeContentForStory(story, extractedContent);
+    }
+  }, [stories, extractionProgress, summarizeContentForStory]);
+
   const clearCache = useCallback(() => {
     hackerNewsApi.clearCache();
     ContentExtractorService.clearCache();
     setExtractionProgress(new Map());
+    setSummarizationProgress(new Map());
     extractionQueue.current.clear();
+    summarizationQueue.current.clear();
   }, []);
 
   const getApiStats = useCallback(() => {
@@ -160,6 +224,14 @@ export const useHackerNews = (limit: number = 20): HackerNewsHookState & HackerN
     inProgress: Array.from(extractionProgress.values()).filter(v => v === 'loading').length,
   };
 
+  // Calculate summarization stats
+  const summarizationStats = {
+    total: Array.from(extractionProgress.values()).filter(v => typeof v === 'object' && v.success).length,
+    completed: Array.from(summarizationProgress.values()).filter(v => typeof v === 'object' && v.summary).length,
+    failed: Array.from(summarizationProgress.values()).filter(v => v === 'failed').length,
+    inProgress: Array.from(summarizationProgress.values()).filter(v => v === 'loading').length,
+  };
+
   // Initial load
   useEffect(() => {
     loadStories(false, limit);
@@ -169,6 +241,7 @@ export const useHackerNews = (limit: number = 20): HackerNewsHookState & HackerN
   useEffect(() => {
     return () => {
       extractionQueue.current.clear();
+      summarizationQueue.current.clear();
     };
   }, []);
 
@@ -178,10 +251,13 @@ export const useHackerNews = (limit: number = 20): HackerNewsHookState & HackerN
     refreshing,
     error,
     extractionProgress,
+    summarizationProgress,
     extractionStats,
+    summarizationStats,
     refreshStories,
     loadMoreStories,
     retryExtraction,
+    retrySummarization,
     clearCache,
     getApiStats,
   };

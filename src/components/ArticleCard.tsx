@@ -1,24 +1,54 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { EnhancedStory } from '../types';
+import { SummaryResponse } from '../types/summarization';
 import { Colors, Spacing, Typography } from '../constants';
 
 interface ArticleCardProps {
   story: EnhancedStory;
   onPress: () => void;
   onRetryExtraction?: () => void;
+  onRetrySummarization?: () => void;
   isDark?: boolean;
+  summary?: SummaryResponse | null;
+  summaryStatus?: 'loading' | 'success' | 'failed' | 'none';
+  showSummaryFirst?: boolean;
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({ 
   story, 
   onPress, 
   onRetryExtraction,
-  isDark = false 
+  onRetrySummarization,
+  isDark = false,
+  summary,
+  summaryStatus = 'none',
+  showSummaryFirst = true
 }) => {
   const colors = isDark ? Colors.dark : Colors;
   
+  const getSummaryContent = () => {
+    if (summaryStatus === 'loading') {
+      return 'Generating AI summary...';
+    }
+    
+    if (summaryStatus === 'success' && summary?.summary) {
+      return summary.summary;
+    }
+    
+    if (summaryStatus === 'failed') {
+      return 'AI summary generation failed. Tap to retry.';
+    }
+    
+    return null;
+  };
+
   const getContentPreview = () => {
+    // Show AI summary first if available and preference is set
+    if (showSummaryFirst && summaryStatus === 'success' && summary?.summary) {
+      return summary.summary;
+    }
+
     if (!story.url) {
       return story.text ? story.text.substring(0, 150) + '...' : 'Discussion on Hacker News';
     }
@@ -38,6 +68,19 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     return `Article from ${story.domain || 'external site'}`;
   };
 
+  const getSummarizationStatusIcon = () => {
+    switch (summaryStatus) {
+      case 'loading':
+        return <ActivityIndicator size="small" color={Colors.primary} style={styles.statusIcon} />;
+      case 'success':
+        return <Text style={[styles.statusIcon, { color: Colors.success || '#28a745' }]}>🤖</Text>;
+      case 'failed':
+        return <Text style={[styles.statusIcon, { color: Colors.error || '#dc3545' }]}>⚠</Text>;
+      default:
+        return null;
+    }
+  };
+
   const getExtractionStatusIcon = () => {
     switch (story.extractionStatus) {
       case 'loading':
@@ -54,6 +97,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const getTagsFromStory = () => {
     const tags: string[] = [];
     
+    // Add AI summary status tag
+    if (summaryStatus === 'success' && summary) {
+      if (summary.cached) {
+        tags.push('AI Cached');
+      } else {
+        tags.push('AI Fresh');
+      }
+    }
+    
     if (story.domain && typeof story.domain === 'string') {
       tags.push(story.domain);
     }
@@ -66,7 +118,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       tags.push('Discussion');
     }
     
-    return tags.slice(0, 2);
+    return tags.slice(0, 3);
   };
 
   const tags = getTagsFromStory();
@@ -82,7 +134,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
             {story.title || 'Untitled'}
           </Text>
-          {getExtractionStatusIcon()}
+          <View style={styles.statusIcons}>
+            {getSummarizationStatusIcon()}
+            {getExtractionStatusIcon()}
+          </View>
         </View>
         <View style={styles.metadata}>
           <Text style={[styles.author, { color: colors.textSecondary }]}>
@@ -112,6 +167,20 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         </TouchableOpacity>
       )}
       
+      {summaryStatus === 'failed' && onRetrySummarization && (
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            onRetrySummarization();
+          }}
+        >
+          <Text style={[styles.retryText, { color: Colors.primary }]}>
+            Retry AI summary
+          </Text>
+        </TouchableOpacity>
+      )}
+      
       <View style={styles.footer}>
         <View style={styles.tags}>
           {tags.map((tag, index) => (
@@ -121,9 +190,19 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           ))}
         </View>
         <View style={styles.stats}>
-          {story.extractedContent?.wordCount && (
+          {summary?.wordCount && summaryStatus === 'success' && (
+            <Text style={[styles.readingTime, { color: colors.textMuted }]}>
+              AI: {summary.wordCount}w
+            </Text>
+          )}
+          {!summary?.wordCount && story.extractedContent?.wordCount && (
             <Text style={[styles.readingTime, { color: colors.textMuted }]}>
               {Math.ceil(story.extractedContent.wordCount / 200)} min read
+            </Text>
+          )}
+          {summary?.processingTime && summaryStatus === 'success' && !summary.cached && (
+            <Text style={[styles.readingTime, { color: colors.textMuted }]}>
+              {(summary.processingTime / 1000).toFixed(1)}s
             </Text>
           )}
           <Text style={[styles.score, { color: Colors.primary }]}>
@@ -165,6 +244,17 @@ const styles = StyleSheet.create({
     lineHeight: Typography.lineHeights.tight * Typography.fontSizes.lg,
     flex: 1,
     marginRight: Spacing.sm,
+  },
+  statusIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  statusIcon: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: Typography.fontWeights.semibold,
+    minWidth: 20,
+    textAlign: 'center',
   },
   extractionIcon: {
     fontSize: Typography.fontSizes.sm,

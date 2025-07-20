@@ -35,6 +35,8 @@ export interface EnhancedStory extends HackerNewsStory {
     error?: string;
   };
   extractionStatus?: 'loading' | 'success' | 'failed' | 'none';
+  summary?: import('./summarization').SummaryResponse;
+  summaryStatus?: 'loading' | 'success' | 'failed' | 'none';
 }
 
 export interface UserPreferences {

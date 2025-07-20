@@ -192,6 +192,29 @@ export const ArticleDetailScreen: React.FC = () => {
           </View>
         )}
 
+        {/* AI Summary */}
+        {story.summary && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              AI Summary {story.summary.cached ? '⚡' : '✨'}
+            </Text>
+            <Text style={[styles.summaryContent, { color: colors.textSecondary }]}>
+              {story.summary.summary}
+            </Text>
+            <View style={styles.summaryMeta}>
+              <Text style={[styles.summaryStats, { color: colors.textMuted }]}>
+                {story.summary.wordCount} words • {story.summary.confidence ? Math.round(story.summary.confidence * 100) : 'N/A'}% confidence
+                {story.summary.tokensUsed && ` • ${story.summary.tokensUsed} tokens`}
+              </Text>
+              {story.summary.cached && (
+                <Text style={[styles.cachedNote, { color: colors.textMuted }]}>
+                  Cached result
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Extracted Content */}
         {story.extractedContent?.success && story.extractedContent.content && (
           <View style={styles.section}>
@@ -381,5 +404,21 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.md,
     fontWeight: Typography.fontWeights.semibold,
     marginLeft: Spacing.sm,
+  },
+  summaryContent: {
+    fontSize: Typography.fontSizes.md,
+    lineHeight: Typography.lineHeights.relaxed * Typography.fontSizes.md,
+    marginBottom: Spacing.sm,
+  },
+  summaryMeta: {
+    marginTop: Spacing.sm,
+  },
+  summaryStats: {
+    fontSize: Typography.fontSizes.sm,
+    marginBottom: Spacing.xs,
+  },
+  cachedNote: {
+    fontSize: Typography.fontSizes.xs,
+    fontStyle: 'italic',
   },
 });

@@ -20,14 +20,18 @@ export const HomeScreen: React.FC = () => {
     refreshing,
     error,
     extractionProgress,
+    summarizationProgress,
     extractionStats,
+    summarizationStats,
     refreshStories,
     retryExtraction,
+    retrySummarization,
     clearCache,
   } = useHackerNews(20);
 
   const enhanceStoryWithExtraction = (story: any): EnhancedStory => {
     const extractionData = extractionProgress.get(story.id);
+    const summarizationData = summarizationProgress.get(story.id);
     
     let extractionStatus: 'loading' | 'success' | 'failed' | 'none' = 'none';
     let extractedContent = undefined;
@@ -49,10 +53,25 @@ export const HomeScreen: React.FC = () => {
       };
     }
 
+    // Determine summarization status
+    let summaryStatus: 'loading' | 'success' | 'failed' | 'none' = 'none';
+    let summary = undefined;
+
+    if (summarizationData === 'loading') {
+      summaryStatus = 'loading';
+    } else if (summarizationData === 'failed') {
+      summaryStatus = 'failed';
+    } else if (typeof summarizationData === 'object') {
+      summaryStatus = 'success';
+      summary = summarizationData;
+    }
+
     return {
       ...story,
       extractionStatus,
       extractedContent,
+      summaryStatus,
+      summary,
     };
   };
 
@@ -102,6 +121,9 @@ export const HomeScreen: React.FC = () => {
             story={item}
             onPress={() => handleArticlePress(item)}
             onRetryExtraction={() => retryExtraction(item.id)}
+            onRetrySummarization={() => retrySummarization(item.id)}
+            summary={item.summary}
+            summaryStatus={item.summaryStatus}
             isDark={isDark}
           />
         )}

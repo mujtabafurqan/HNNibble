@@ -1,0 +1,1 @@
+export { hackerNewsApi } from './hackerNewsApi';

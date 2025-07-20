@@ -1,0 +1,177 @@
+{
+  "timestamp": "2025-07-19T21:15:32.212Z",
+  "stats": {
+    "totalAttempts": 5,
+    "successfulExtractions": 4,
+    "failedExtractions": 1,
+    "extractionTimes": [
+      176,
+      1066,
+      301,
+      313,
+      153
+    ],
+    "methodStats": {
+      "readability": 2,
+      "custom": 1,
+      "metadata": 1,
+      "fallback": 0,
+      "failed": 1
+    },
+    "domainStats": {
+      "infrastructurereportcard.org": {
+        "attempts": 1,
+        "successes": 0
+      },
+      "it-notes.dragas.net": {
+        "attempts": 1,
+        "successes": 1
+      },
+      "forgecode.dev": {
+        "attempts": 1,
+        "successes": 1
+      },
+      "twitter.com": {
+        "attempts": 1,
+        "successes": 1
+      },
+      "taipeitimes.com": {
+        "attempts": 1,
+        "successes": 1
+      }
+    },
+    "errorTypes": {
+      "403": 1
+    }
+  },
+  "results": [
+    {
+      "story": {
+        "id": 44618679,
+        "title": "2025 Infrastructure Report Card",
+        "url": "https://infrastructurereportcard.org/",
+        "score": 44,
+        "by": "jonbaer",
+        "time": 1752954143,
+        "descendants": 14
+      },
+      "extraction": {
+        "success": false,
+        "url": "https://infrastructurereportcard.org/",
+        "domain": "infrastructurereportcard.org",
+        "extractionMethod": "failed",
+        "extractionTime": 176,
+        "contentLength": 0,
+        "wordCount": 0,
+        "estimatedQuality": 0,
+        "error": "Request failed with status code 403",
+        "httpStatus": 403,
+        "contentType": "error"
+      }
+    },
+    {
+      "story": {
+        "id": 44618687,
+        "title": "Make Your Own Backup System – Part 1: Strategy Before Scripts",
+        "url": "https://it-notes.dragas.net/2025/07/18/make-your-own-backup-system-part-1-strategy-before-scripts/",
+        "score": 28,
+        "by": "Bogdanp",
+        "time": 1752954203,
+        "descendants": 9
+      },
+      "extraction": {
+        "success": true,
+        "url": "https://it-notes.dragas.net/2025/07/18/make-your-own-backup-system-part-1-strategy-before-scripts/",
+        "domain": "it-notes.dragas.net",
+        "extractionMethod": "readability",
+        "extractionTime": 1066,
+        "contentLength": 29736,
+        "wordCount": 2422,
+        "estimatedQuality": 85,
+        "hasTitle": true,
+        "hasArticle": true,
+        "hasMainContent": true,
+        "httpStatus": 200,
+        "contentType": "text/html"
+      }
+    },
+    {
+      "story": {
+        "id": 44617910,
+        "title": "MCP Security Vulnerabilities and Attack Vectors",
+        "url": "https://forgecode.dev/blog/prevent-attacks-on-mcp/",
+        "score": 108,
+        "by": "tested1",
+        "time": 1752948859,
+        "descendants": 10
+      },
+      "extraction": {
+        "success": true,
+        "url": "https://forgecode.dev/blog/prevent-attacks-on-mcp/",
+        "domain": "forgecode.dev",
+        "extractionMethod": "readability",
+        "extractionTime": 301,
+        "contentLength": 43978,
+        "wordCount": 1257,
+        "estimatedQuality": 85,
+        "hasTitle": true,
+        "hasArticle": true,
+        "hasMainContent": true,
+        "httpStatus": 200,
+        "contentType": "text/html; charset=utf-8"
+      }
+    },
+    {
+      "story": {
+        "id": 44613840,
+        "title": "OpenAI claims gold-medal performance at IMO 2025",
+        "url": "https://twitter.com/alexwei_/status/1946477742855532918",
+        "score": 327,
+        "by": "Davidzheng",
+        "time": 1752916279,
+        "descendants": 520
+      },
+      "extraction": {
+        "success": true,
+        "url": "https://twitter.com/alexwei_/status/1946477742855532918",
+        "domain": "twitter.com",
+        "extractionMethod": "metadata",
+        "extractionTime": 313,
+        "contentLength": 274306,
+        "wordCount": 687,
+        "estimatedQuality": 50,
+        "hasTitle": false,
+        "hasArticle": false,
+        "hasMainContent": false,
+        "httpStatus": 200,
+        "contentType": "text/html; charset=utf-8"
+      }
+    },
+    {
+      "story": {
+        "id": 44618762,
+        "title": "TSMC to start building four new plants with 1.4nm technology",
+        "url": "https://www.taipeitimes.com/News/front/archives/2025/07/20/2003840583",
+        "score": 46,
+        "by": "giuliomagnifico",
+        "time": 1752954750,
+        "descendants": 27
+      },
+      "extraction": {
+        "success": true,
+        "url": "https://www.taipeitimes.com/News/front/archives/2025/07/20/2003840583",
+        "domain": "taipeitimes.com",
+        "extractionMethod": "custom",
+        "extractionTime": 153,
+        "contentLength": 44463,
+        "wordCount": 2032,
+        "estimatedQuality": 70,
+        "hasTitle": true,
+        "hasArticle": false,
+        "hasMainContent": false,
+        "httpStatus": 200,
+        "contentType": "text/html; charset=UTF-8"
+      }
+    }
+  ]
+}
